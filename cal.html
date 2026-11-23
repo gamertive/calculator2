@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CALCULATOR 3000000 // MAX PRO</title>
+<style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: 'Consolas', 'Courier New', monospace;
+        user-select: none;
+    }
+
+    body {
+        min-height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        overflow: hidden;
+        transition: background 0.5s ease;
+        background: #1e1e2e;
+    }
+
+    /* Анимированный фон с частицами */
+    #particles-canvas {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 0;
+        pointer-events: none;
+    }
+
+    /* Темы */
+    body.dark { background: linear-gradient(135deg, #1e1e2e 0%, #181825 100%); }
+    body.light { background: linear-gradient(135deg, #eff1f5 0%, #dce0e8 100%); }
+    body.cyber { background: linear-gradient(135deg, #050505 0%, #0a0a0a 100%); }
+
+    /* Калькулятор */
+    .calculator {
+        position: relative;
+        z-index: 10;
+        width: 420px;
+        max-width: 95vw;
+        padding: 25px;
+        border-radius: 24px;
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+        transition: all 0.5s ease;
+    }
+
+    body.dark .calculator {
+        background: rgba(30, 30, 46, 0.7);
+        border-color: rgba(205, 214, 244, 0.1);
+    }
+    body.light .calculator {
+        background: rgba(239, 241, 245, 0.7);
+        border-color: rgba(76, 79, 105, 0.2);
+    }
+    body.cyber .calculator {
+        background: rgba(5, 5, 5, 0.8);
+        border-color: rgba(0, 255, 204, 0.3);
+        box-shadow: 0 0 40px rgba(0, 255, 204, 0.2), 0 25px 50px rgba(0, 0, 0, 0.8);
+    }
+
+    /* Заголовок */
+    .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+        padding: 0 5px;
+    }
+
+    .logo {
+        font-size: 12px;
+        font-weight: bold;
+        letter-spacing: 2px;
+        opacity: 0.6;
+    }
+
+    .status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #a6e3a1;
+        box-shadow: 0 0 10px #a6e3a1;
+        animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.3; }
+    }
+
+    /* Дисплей */
+    .display {
+        padding: 20px;
+        border-radius: 16px;
+        margin-bottom: 20px;
+        min-height: 130px;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+        transition: all 0.3s ease;
+    }
+
+    body.dark .display { background: rgba(17, 17, 27, 0.5); }
+    body.light .display { background: rgba(204, 208, 218, 0.5); }
+    body.cyber .display { 
+        background: rgba(0, 0, 0, 0.6);
+        border: 1px solid rgba(0, 255, 204, 0.2);
+        box-shadow: inset 0 0 20px rgba(0, 255, 204, 0.05);
+    }
+
+    .expression {
+        font-size: 18px;
+        text-align: right;
+        min-height: 25px;
+        word-wrap: break-word;
+        word-break: break-all;
+        opacity: 0.6;
+        margin-bottom: 10px;
+        transition: color 0.3s;
+    }
+
+    .result {
+        font-size: 48px;
+        font-weight: bold;
+        text-align: right;
+        word-wrap: break-word;
+        word-break: break-all;
+        transition: color 0.3s;
+        text-shadow: 0 0 20px currentColor;
+    }
+
+    body.dark .expression, body.dark .result { color: #cdd6f4; }
+    body.light .expression, body.light .result { color: #4c4f69; }
+    body.cyber .expression, body.cyber .result { color: #00ff00; }
+
+    .result.error { color: #f38ba8 !important; }
+
+    /* Сетка кнопок */
+    .buttons {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 10px;
+    }
+
+    .btn {
+        padding: 18px 0;
+        border: none;
+        border-radius: 12px;
+        font-size: 20px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: all 0.15s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .btn:active {
+        transform: scale(0.95);
+    }
+
+    .btn::before {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 0;
+        height: 0;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.3);
+        transform: translate(-50%, -50%);
+        transition: width 0.4s, height 0.4s;
+    }
+
+    .btn:active::before {
+        width: 200px;
+        height: 200px;
+    }
+
+    /* Типы кнопок */
+    .btn-num {
+        background: rgba(49, 50, 68, 0.6);
+        color: #cdd6f4;
+    }
+    body.light .btn-num { background: rgba(204, 208, 218, 0.6); color: #4c4f69; }
+    body.cyber .btn-num { 
+        background: rgba(17, 17, 17, 0.8); 
+        color: #00ff00;
+        border: 1px solid rgba(0, 255, 0, 0.2);
+    }
+
+    .btn-op {
+        background: rgba(243, 139, 168, 0.2);
+        color: #f38ba8;
+    }
+    body.light .btn-op { background: rgba(210, 15, 57, 0.15); color: #d20f39; }
+    body.cyber .btn-op { 
+        background: rgba(255, 0, 85, 0.15); 
+        color: #ff0055;
+        border: 1px solid rgba(255, 0, 85, 0.3);
+        text-shadow: 0 0 10px #ff0055;
+    }
+
+    .btn-eq {
+        background: rgba(166, 227, 161, 0.3);
+        color: #a6e3a1;
+    }
+    body.light .btn-eq { background: rgba(64, 160, 43, 0.2); color: #40a02b; }
+    body.cyber .btn-eq { 
+        background: rgba(0, 255, 204, 0.2); 
+        color: #00ffcc;
+        border: 1px solid rgba(0, 255, 204, 0.5);
+        box-shadow: 0 0 15px rgba(0, 255, 204, 0.3);
+        text-shadow: 0 0 10px #00ffcc;
+    }
+
+    .btn-sys {
+        background: rgba(137, 180, 250, 0.15);
+        color: #89b4fa;
+    }
+    body.light .btn-sys { background: rgba(30, 102, 245, 0.15); color: #1e66f5; }
+    body.cyber .btn-sys { 
+        background: rgba(0, 150, 255, 0.15); 
+        color: #0096ff;
+        border: 1px solid rgba(0, 150, 255, 0.3);
+    }
+
+    .btn:hover { filter: brightness(1.2); }
+
+    /* Модальное окно истории */
+    .modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.7);
+        display: none;
+        justify-content: center;
+        align-items: center;
+        z-index: 100;
+        backdrop-filter: blur(5px);
+    }
+
+    .modal.active { display: flex; }
+
+    .modal-content {
+        width: 350px;
+        max-width: 90vw;
+        max-height: 70vh;
+        padding: 25px;
+        border-radius: 20px;
+        backdrop-filter: blur(20px);
+        background: rgba(30, 30, 46, 0.95);
+        border: 1px solid rgba(205, 214, 244, 0.1);
+        display: flex;
+        flex-direction: column;
+    }
+
+    body.cyber .modal-content {
+        background: rgba(5, 5, 5, 0.95);
+        border-color: rgba(0, 255, 204, 0.3);
+        box-shadow: 0 0 40px rgba(0, 255, 204, 0.2);
+    }
+
+    .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+        padding-bottom: 15px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .modal-title {
+        font-size: 14px;
+        font-weight: bold;
+        letter-spacing: 2px;
+        color: #cdd6f4;
+    }
+
+    body.cyber .modal-title { color: #00ffcc; }
+
+    .close-btn {
+        background: none;
+        border: none;
+        color: #cdd6f4;
+        font-size: 24px;
+        cursor: pointer;
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        transition: all 0.2s;
+    }
+
+    .close-btn:hover { background: rgba(255, 255, 255, 0.1); }
+
+    .history-list {
+        flex: 1;
+        overflow-y: auto;
+        padding-right: 5px;
+    }
+
+    .history-list::-webkit-scrollbar { width: 6px; }
+    .history-list::-webkit-scrollbar-track { background: transparent; }
+    .history-list::-webkit-scrollbar-thumb { 
+        background: rgba(205, 214, 244, 0.2); 
+        border-radius: 3px;
+    }
+
+    .history-item {
+        padding: 10px;
+        margin-bottom: 8px;
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.03);
+        color: #cdd6f4;
+        font-size: 14px;
+        word-break: break-all;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .history-item:hover {
+        background: rgba(255, 255, 255, 0.08);
+        transform: translateX(3px);
+    }
+
+    body.cyber .history-item { color: #00ff00; }
+
+    .empty-history {
+        text-align: center;
+        padding: 40px 0;
+        color: rgba(205, 214, 244, 0.5);
+        font-size: 14px;
+    }
+
+    /* Адаптивность */
+    @media (max-width: 480px) {
+        .calculator { padding: 15px; }
+        .btn { padding: 14px 0; font-size: 16px; }
+        .result { font-size: 36px; }
+        .expression { font-size: 14px; }
+    }
+</style>
+</head>
+<body class="dark">
+
+<canvas id="particles-canvas"></canvas>
+
+<div class="calculator">
+    <div class="header">
+        <div class="logo">CALC 3000000 // MAX PRO</div>
+        <div class="status-dot"></div>
+    </div>
+
+    <div class="display">
+        <div class="expression" id="expression"></div>
+        <div class="result" id="result">0</div>
+    </div>
+
+    <div class="buttons">
+        <button class="btn btn-sys" data-action="history">H</button>
+        <button class="btn btn-sys" data-action="theme">T</button>
+        <button class="btn btn-sys" data-action="clear">C</button>
+        <button class="btn btn-sys" data-action="delete">DEL</button>
+        <button class="btn btn-op" data-action="input" data-value="÷">÷</button>
+
+        <button class="btn btn-op" data-action="func" data-value="sin(">sin</button>
+        <button class="btn btn-op" data-action="func" data-value="cos(">cos</button>
+        <button class="btn btn-op" data-action="func" data-value="tan(">tan</button>
+        <button class="btn btn-op" data-action="input" data-value="√">√</button>
+        <button class="btn btn-op" data-action="input" data-value="×">×</button>
+
+        <button class="btn btn-num" data-action="input" data-value="7">7</button>
+        <button class="btn btn-num" data-action="input" data-value="8">8</button>
+        <button class="btn btn-num" data-action="input" data-value="9">9</button>
+        <button class="btn btn-op" data-action="input" data-value="(">(</button>
+        <button class="btn btn-op" data-action="input" data-value="-">-</button>
+
+        <button class="btn btn-num" data-action="input" data-value="4">4</button>
+        <button class="btn btn-num" data-action="input" data-value="5">5</button>
+        <button class="btn btn-num" data-action="input" data-value="6">6</button>
+        <button class="btn btn-op" data-action="input" data-value=")">)</button>
+        <button class="btn btn-op" data-action="input" data-value="+">+</button>
+
+        <button class="btn btn-num" data-action="input" data-value="1">1</button>
+        <button class="btn btn-num" data-action="input" data-value="2">2</button>
+        <button class="btn btn-num" data-action="input" data-value="3">3</button>
+        <button class="btn btn-op" data-action="input" data-value="^">^</button>
+        <button class="btn btn-eq" data-action="equals">=</button>
+
+        <button class="btn btn-sys" data-action="negate">±</button>
+        <button class="btn btn-num" data-action="input" data-value="0">0</button>
+        <button class="btn btn-num" data-action="input" data-value=".">.</button>
+        <button class="btn btn-op" data-action="input" data-value="%">%</button>
+        <button class="btn btn-op" data-action="input" data-value="π">π</button>
+    </div>
+</div>
+
+<!-- Модальное окно истории -->
+<div class="modal" id="historyModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <div class="modal-title">ЖУРНАЛ ВЫЧИСЛЕНИЙ</div>
+            <button class="close-btn" id="closeModal">×</button>
+        </div>
+        <div class="history-list" id="historyList"></div>
+    </div>
+</div>
+
+<script>
+// ============ СОСТОЯНИЕ ============
+const state = {
+    expression: '',
+    result: '0',
+    history: [],
+    theme: 'dark',
+    themes: ['dark', 'light', 'cyber']
+};
+
+// ============ ЭЛЕМЕНТЫ ============
+const exprEl = document.getElementById('expression');
+const resultEl = document.getElementById('result');
+const historyModal = document.getElementById('historyModal');
+const historyList = document.getElementById('historyList');
+const closeModal = document.getElementById('closeModal');
+
+// ============ ФУНКЦИИ ============
+function updateDisplay() {
+    exprEl.textContent = state.expression;
+    resultEl.textContent = state.result;
+    resultEl.classList.remove('error');
+}
+
+function onInput(value) {
+    if (state.expression === '0' && !['.', '÷', '×', '-', '+', '^', '%'].includes(value)) {
+        state.expression = value;
+    } else {
+        state.expression += value;
+    }
+    state.result = '';
+    updateDisplay();
+}
+
+function onFunc(value) {
+    state.expression += value;
+    state.result = '';
+    updateDisplay();
+}
+
+function onClear() {
+    state.expression = '';
+    state.result = '0';
+    updateDisplay();
+}
+
+function onDelete() {
+    state.expression = state.expression.slice(0, -1);
+    updateDisplay();
+}
+
+function onNegate() {
+    if (state.expression.startsWith('-')) {
+        state.expression = state.expression.slice(1);
+    } else if (state.expression && state.expression !== '0') {
+        state.expression = '-' + state.expression;
+    }
+    updateDisplay();
+}
+
+function onEquals() {
+    if (!state.expression) return;
+    try {
+        let expr = state.expression
+            .replace(/×/g, '*')
+            .replace(/÷/g, '/')
+            .replace(/\^/g, '**')
+            .replace(/√/g, 'Math.sqrt')
+            .replace(/π/g, 'Math.PI')
+            .replace(/%/g, '/100');
+
+        // Безопасная проверка
+        if (/[^0-9+\-*/().\sMathsqrtPI sincotaglqrp]/.test(expr.replace(/Math\.\w+/g, ''))) {
+            throw new Error('Invalid');
+        }
+
+        const result = eval(expr);
+        
+        if (typeof result !== 'number' || !isFinite(result)) {
+            throw new Error('Math error');
+        }
+
+        let formatted;
+        if (Number.isInteger(result)) {
+            formatted = result.toString();
+        } else {
+            formatted = parseFloat(result.toFixed(10)).toString();
+        }
+
+        state.history.push(`${state.expression} = ${formatted}`);
+        state.result = formatted;
+        state.expression = formatted;
+        updateDisplay();
+    } catch (e) {
+        state.result = 'ERROR';
+        resultEl.classList.add('error');
+        updateDisplay();
+    }
+}
+
+function onTheme() {
+    const idx = state.themes.indexOf(state.theme);
+    state.theme = state.themes[(idx + 1) % state.themes.length];
+    document.body.className = state.theme;
+    initParticles(); // Перезапуск частиц под новую тему
+}
+
+function onHistory() {
+    historyList.innerHTML = '';
+    if (state.history.length === 0) {
+        historyList.innerHTML = '<div class="empty-history">Пусто...</div>';
+    } else {
+        state.history.slice(-20).reverse().forEach(item => {
+            const div = document.createElement('div');
+            div.className = 'history-item';
+            div.textContent = item;
+            div.onclick = () => {
+                const result = item.split(' = ')[1];
+                state.expression = result;
+                state.result = result;
+                updateDisplay();
+                historyModal.classList.remove('active');
+            };
+            historyList.appendChild(div);
+        });
+    }
+    historyModal.classList.add('active');
+}
+
+// ============ СОБЫТИЯ ============
+document.querySelectorAll('.btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const action = btn.dataset.action;
+        const value = btn.dataset.value;
+
+        switch(action) {
+            case 'input': onInput(value); break;
+            case 'func': onFunc(value); break;
+            case 'clear': onClear(); break;
+            case 'delete': onDelete(); break;
+            case 'negate': onNegate(); break;
+            case 'equals': onEquals(); break;
+            case 'theme': onTheme(); break;
+            case 'history': onHistory(); break;
+        }
+    });
+});
+
+closeModal.addEventListener('click', () => historyModal.classList.remove('active'));
+historyModal.addEventListener('click', (e) => {
+    if (e.target === historyModal) historyModal.classList.remove('active');
+});
+
+// Клавиатура
+document.addEventListener('keydown', (e) => {
+    const key = e.key;
+    if (/^[0-9.]$/.test(key)) onInput(key);
+    else if (['+', '-', '*', '/', '^', '%', '(', ')'].includes(key)) {
+        const map = {'*': '×', '/': '÷'};
+        onInput(map[key] || key);
+    }
+    else if (key === 'Enter' || key === '=') { e.preventDefault(); onEquals(); }
+    else if (key === 'Backspace') onDelete();
+    else if (key === 'Escape') onClear();
+});
+
+// ============ ЧАСТИЦЫ ============
+const canvas = document.getElementById('particles-canvas');
+const ctx = canvas.getContext('2d');
+let particles = [];
+let animationId;
+
+function resizeCanvas() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+}
+
+function getParticleColor() {
+    switch(state.theme) {
+        case 'dark': return 'rgba(205, 214, 244, 0.4)';
+        case 'light': return 'rgba(76, 79, 105, 0.3)';
+        case 'cyber': return 'rgba(0, 255, 204, 0.6)';
+    }
+}
+
+function initParticles() {
+    particles = [];
+    const count = Math.min(80, Math.floor(window.innerWidth * window.innerHeight / 15000));
+    for (let i = 0; i < count; i++) {
+        particles.push({
+            x: Math.random() * canvas.width,
+            y: Math.random() * canvas.height,
+            vx: (Math.random() - 0.5) * 0.5,
+            vy: (Math.random() - 0.5) * 0.5,
+            size: Math.random() * 2 + 1
+        });
+    }
+}
+
+function animateParticles() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const color = getParticleColor();
+
+    particles.forEach(p => {
+        p.x += p.vx;
+        p.y += p.vy;
+
+        if (p.x < 0 || p.x > canvas.width) p.vx *= -1;
+        if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
+
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fillStyle = color;
+        ctx.fill();
+    });
+
+    // Соединяем близкие частицы линиями
+    for (let i = 0; i < particles.length; i++) {
+        for (let j = i + 1; j < particles.length; j++) {
+            const dx = particles[i].x - particles[j].x;
+            const dy = particles[i].y - particles[j].y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist < 120) {
+                ctx.beginPath();
+                ctx.moveTo(particles[i].x, particles[i].y);
+                ctx.lineTo(particles[j].x, particles[j].y);
+                ctx.strokeStyle = color.replace(/[\d.]+\)$/, (1 - dist / 120) * 0.3 + ')');
+                ctx.lineWidth = 0.5;
+                ctx.stroke();
+            }
+        }
+    }
+
+    animationId = requestAnimationFrame(animateParticles);
+}
+
+window.addEventListener('resize', () => {
+    resizeCanvas();
+    initParticles();
+});
+
+resizeCanvas();
+initParticles();
+animateParticles();
+updateDisplay();
+</script>
+
+</body>
+</html>
