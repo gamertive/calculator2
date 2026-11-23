@@ -479,6 +479,16 @@ function onNegate() {
 
 function onEquals() {
     if (!state.expression) return;
+    
+    // 🎭 ПАСХАЛКА: 2+2 = maxim pidor
+    if (state.expression === '2+2') {
+        state.result = 'maxim pidor';
+        state.history.push(`${state.expression} = maxim pidor`);
+        state.expression = 'maxim pidor';
+        updateDisplay();
+        return;
+    }
+    
     try {
         let expr = state.expression
             .replace(/×/g, '*')
@@ -521,7 +531,7 @@ function onTheme() {
     const idx = state.themes.indexOf(state.theme);
     state.theme = state.themes[(idx + 1) % state.themes.length];
     document.body.className = state.theme;
-    initParticles(); // Перезапуск частиц под новую тему
+    initParticles();
 }
 
 function onHistory() {
@@ -633,7 +643,6 @@ function animateParticles() {
         ctx.fill();
     });
 
-    // Соединяем близкие частицы линиями
     for (let i = 0; i < particles.length; i++) {
         for (let j = i + 1; j < particles.length; j++) {
             const dx = particles[i].x - particles[j].x;
